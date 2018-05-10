@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="iso-8859-2"?>
+
+<project name="IngatlanKozvetites" default="deploy" basedir=".">
+	<description>Alkalmazásfejlesztés "ant" példa fájl</description>
+
+	<!-- Globális jellemzők, pl. könyvtárnevek -->
+	<property name="src" value="src" />
+	<property name="build" value="build" />
+	<property name="dist" value="dist" />
+	<property name="web" value="WebContent" />
+	<property name="kulso" value="../../../ext" />
+	<property name="vaadin" value="${kulso}/java/Vaadin" />
+	<property name="tomcat" value="${kulso}/java/apache-tomcat-7.0.55" />
+	<property name="appname" value="IngatlanKozvetites" />
+
+	<path id="kulso-libek">
+		<fileset dir="${vaadin}" includes="*.jar" />
+		<fileset dir="${kulso}" includes="*.jar" />
+	</path>
+
+	<!-- Összetett feladatok definiálása pl. init, compile, dist, clean -->
+	<target name="init" description="Projekt inicializálás">
+		<mkdir dir="${build}/WEB-INF/lib" />
+		<mkdir dir="${build}/WEB-INF/classes" />
+	</target>
+
+	<target name="compile" depends="init"
+		description="Java forráskód fordítás ${src}-ből ${build}/WEB-INF-be">
+		<javac encoding="UTF-8" srcdir="${src}/" destdir="${build}/WEB-INF/classes"
+			classpathref="kulso-libek" debug="true" />
+		<copy todir="${build}/WEB-INF/lib" flatten="true">
+			<path refid="kulso-libek" />
+		</copy>
+	</target>
+
+	<target name="dist" depends="clean, compile"
+		description="Disztribúció (terjeszthető változat) készítés a ${dist} könyvtárba">
+		<mkdir dir="${dist}" />
+		<war destfile="${dist}/${appname}.war" webxml="${web}/WEB-INF/web.xml">
+			<fileset dir="${build}" />
+			<fileset dir="${web}" />
+		</war>
+	</target>
+
+	<target name="deploy" depends="dist" description="Disztribúció deploy a tomcat alá">
+		<java classname="org.apache.catalina.startup.Bootstrap" fork="true">
+			<classpath
+				path="${tomcat}/bin/bootstrap.jar:${tomcat}/bin/tomcat-juli.jar" />
+			<jvmarg value="-Dcatalina.home=${tomcat}" />
+			<arg line="stop" />
+		</java>
+		<sleep milliseconds="3500" />
+		<delete dir="${tomcat}/webapps/${appname}" failonerror="true" />
+		<copy file="${dist}/${appname}.war" todir="${tomcat}/webapps"
+			overwrite="true" />
+		<java classname="org.apache.catalina.startup.Bootstrap" fork="true"
+			spawn="true">
+			<classpath
+				path="${tomcat}/bin/bootstrap.jar:${tomcat}/bin/tomcat-juli.jar" />
+			<jvmarg value="-Dcatalina.home=${tomcat}" />
+			<env key="DP_path" value="${kulso}/db/elso.db" />
+			<jvmarg value="-Dcatalina.home=${tomcat}" />
+			<jvmarg value="-Xdebug" />
+			<jvmarg
+				value="-Xrunjdwp:transport=dt_socket,address=8000,server=y,suspend=n" />
+		</java>
+	</target>
+
+	<target name="deploywar" description="Disztribúció deploy a tomcat alá">
+		<java classname="org.apache.catalina.startup.Bootstrap" fork="true">
+			<classpath
+				path="${tomcat}/bin/bootstrap.jar:${tomcat}/bin/tomcat-juli.jar" />
+			<jvmarg value="-Dcatalina.home=${tomcat}" />
+			<arg line="stop" />
+		</java>
+		<sleep milliseconds="3500" />
+		<delete dir="${tomcat}/webapps/${appname}" failonerror="true" />
+		<copy file="${dist}/${appname}.war" todir="${tomcat}/webapps"
+			overwrite="true" />
+		<java classname="org.apache.catalina.startup.Bootstrap" fork="true"
+			spawn="true">
+			<classpath
+				path="${tomcat}/bin/bootstrap.jar:${tomcat}/bin/tomcat-juli.jar" />
+			<jvmarg value="-Dcatalina.home=${tomcat}" />
+			<env key="DP_path" value="${kulso}/db/elso.db" />
+			<jvmarg value="-Dcatalina.home=${tomcat}" />
+			<jvmarg value="-Xdebug" />
+			<jvmarg
+				value="-Xrunjdwp:transport=dt_socket,address=8000,server=y,suspend=n" />
+		</java>
+	</target>
+	
+	<target name="clean">
+		<delete dir="${build}" />
+		<delete dir="${dist}" />
+	</target>
+</project>
